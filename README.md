@@ -4,7 +4,7 @@ A dependency-free PHP class that works out a shopping cart's final price from it
 
 ## Context
 
-Solution to the hiring challenge of Bússola Social (2025). The challenge statement is kept in Portuguese in [`CHALLENGE.md`](CHALLENGE.md). Its rules:
+Solution to the hiring challenge of Bússola Social (2025). The challenge statement is kept in Portuguese in [`docs/challenge.md`](docs/challenge.md). Its rules:
 
 - Each cart item has a name, a unit price and a quantity.
 - Payment methods: Pix (paid at once), credit card paid at once (1x), and credit card in 2 to 12 installments.
