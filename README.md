@@ -1,76 +1,76 @@
-1.  **Objetivo**
-    *   Desenvolver um módulo que simule um carrinho de compras básico, calculando o valor final de uma compra com base nos itens adicionados e na forma de pagamento escolhida.
+# Bússola Social Challenge - Shopping cart total calculator
 
-2.  **Descrição**
-    *   Implemente um módulo (pode ser uma classe, função ou conjunto de funções) que contenha a lógica para calcular o valor total de uma compra com base nos itens adicionados ao carrinho e no método de pagamento. 
+A dependency-free PHP class that works out a shopping cart's final price from its items and the chosen payment method, with PHPUnit tests.
 
-    *   Não é necessário implementar nenhuma integração com banco de dados, APIs, ou gateways de pagamento; foque apenas na lógica e nos cálculos necessários.
+## Context
 
-    *   Tente fazer algum teste automatizado(Teste unitário).
+Solution to the hiring challenge of Bússola Social (2025). The challenge statement is kept in Portuguese in [`CHALLENGE.md`](CHALLENGE.md). Its rules:
 
-3.  **Entrega**
-    *   Formato: Faça o upload do seu código em um repositório público no GitHub e envie o link por e-mail.
+- Each cart item has a name, a unit price and a quantity.
+- Payment methods: Pix (paid at once), credit card paid at once (1x), and credit card in 2 to 12 installments.
+- Paying at once gets a 10% discount.
+- Installments add 1% interest per month, compounded: `M = P * (1 + i)^n`.
+- No database, API or payment gateway; a unit test is encouraged.
 
-    *   Prazo: O desafio deve ser entregue em até 1 semana.
+## What it does
 
-4.  **Especificações da Implementação**
-    *   Linguagem de programação: Utilize a linguagem da sua preferência.
+`app/Services/CartService.php` defines `CartService`:
 
-    *   Função ou Classe Principal: Crie uma função ou classe que receba como entrada uma lista de itens e o método de pagamento escolhido. A função ou classe deve retornar o valor final da compra.
+```php
+new CartService(array $items, string $payment_method, int $installment_quantity = 1)
+```
 
-    *   Métodos de Pagamento: Implemente três métodos de pagamento:
-        *   Pix (pagamento à vista)
+- **Items** are arrays with `name`, `unit_price` and `quantity`. A missing key, or a negative price or quantity, throws an `Exception` with a Portuguese message.
+- **Payment methods** come from `getAvailablePaymentMethods()`, which returns `pix` and `credit`. Any other value throws.
+- **Installments** must be exactly `1` for `pix` and between `2` and `12` for `credit`.
+- `getFinalValue()` adds up `unit_price * quantity`. With one installment it applies a 10% discount. Otherwise it multiplies by `1.01^n`.
+- The class has getters and setters for items, payment method and installments.
+- Card holder data (name, number, expiry, CVV) is not modelled. The class docblock explains that this data does not affect the result.
 
-        *   Cartão de Crédito à Vista (1x)
+Example:
 
-        *   Cartão de Crédito Parcelado (de 2 a 12 parcelas)
+```php
+require 'app/Services/CartService.php';
 
-    *   No código, utilize a função ou classe principal para calcular o valor final da compra para cada uma das três formas de pagamento mencionadas.
+$items = [['name' => 'Product', 'unit_price' => 100, 'quantity' => 1]];
 
-    *   Observação: Existem várias maneiras de implementar o desafio; não há resposta certa ou errada. Escolha a solução que melhor demonstre suas habilidades técnicas.
+(new CartService($items, 'pix'))->getFinalValue();        // 90
+(new CartService($items, 'credit', 2))->getFinalValue();  // 102.01
+```
 
-    *   Dúvidas: Fique à vontade para entrar em contato se tiver alguma dúvida.
+## Tech stack
 
-5.  **Regras de negócio**
-    *   Estrutura dos Itens: Cada item no carrinho deve conter:
-        *   Nome
+- Plain PHP: no framework, no Composer. The class uses typed properties, so it needs PHP 7.4+.
+- PHPUnit 10.5.46, bundled as `phpunit.phar` (needs PHP 8.1+). The tests use `#[Depends]` attributes.
 
-        *   Preço unitário
+## Running the tests
 
-        *   Quantidade
+```bash
+php phpunit.phar tests/CartServiceTest.php
+```
 
-    *   Formas de pagamento aceitas:
-        *   Pix (à vista)
+Checked with PHP 8.3: `OK (17 tests, 19 assertions)`.
 
-        *   Cartão de Crédito à Vista (1x)
+Without a local PHP 8.1+:
 
-        *   Cartão de Crédito Parcelado (de 2 a 12 parcelas)
+```bash
+docker run --rm -v "$PWD":/app -w /app php:8.3-cli php phpunit.phar tests/CartServiceTest.php
+```
 
-    *   Dados de Pagamento com Cartão: No caso de pagamento com cartão de crédito, inclua os seguintes dados de entrada:
-        *   Nome do titular do cartão
+## Project structure
 
-        *   Número do cartão de crédito
+```
+app/Services/CartService.php   The calculator
+tests/CartServiceTest.php      PHPUnit tests (construction, setters, validation errors)
+phpunit.phar                   Bundled PHPUnit 10.5.46
+```
 
-        *   Data de validade do cartão
+## Notes
 
-        *   Código de segurança (CVV)
-
-    *   Regras de Descontos e Juros:
-        *   Desconto para Pagamento à Vista: Para pagamentos à vista (Pix ou Cartão de Crédito à Vista), aplique um desconto de 10% sobre o valor total da compra.
-
-        *   Juros para Pagamento Parcelado: Para pagamentos com Cartão de Crédito Parcelado, aplique uma taxa de juros de 1% ao mês sobre o valor total da compra.
-
-            *   Para o cálculo do valor total com juros compostos, utilize a seguinte fórmula:
-
-                *   `M = P*(1 + i)^n`
-
-                *   Onde:
-                    *   `M` é o montante final, ou seja, o valor total da compra com juros aplicados.
-
-                    *   `P` é o principal, ou seja, o valor inicial (total da compra sem juros).
-
-                    *   `i` é a taxa de juros por período, que deve ser expressa em decimal. No caso de 1% ao mês, seria 0,01.
-
-                    * `n` é o número de períodos (número de meses, no caso de uma taxa mensal).
-
-        * O cálculo do valor final da compra deve ser feito considerando a forma de pagamento selecionada, aplicando descontos e acréscimos conforme descrito nas regras de negócio.
+- "Credit card paid at once (1x)" cannot be expressed: `credit` rejects 1 installment, so the 10% discount is only reachable through `pix`.
+- `setPaymentMethod()` does not re-check the installment count. After `setPaymentMethod('pix')` on a cart built as `credit` with 12 installments, the cart still applies interest.
+- The error message for an invalid `credit` installment count says "pix" and "between 1 and 12".
+- `getFinalValue()` does not round its float result.
+- The tests check construction, the setters and the validation errors. The only test on the price, `testGetFinalValue`, asserts that the result is a float, not its amount.
+- The statement asks for the main class to be used to compute the total for each of the three payment methods. The repository has no such script, only the tests.
+- `phpunit.phar` (about 5 MB) and `.phpunit.result.cache` are committed.
